@@ -37,9 +37,9 @@
 <details open="open">
   <summary><h2 style="display: inline-block">目录</h2></summary>
   <ol>
-    <li><a href="#acknowledgements">Acknowledgements</a></li>
+    <li><a href="#参考项目">参考项目</a></li>
     <li>
-      <a href="#about-the-project">关于本项目</a>
+      <a href="#项目介绍">项目介绍</a>
       <ul>
         <li><a href="#built-with">Built With</a></li>
       </ul>
@@ -59,7 +59,7 @@
 </details>
 
 <!-- ACKNOWLEDGEMENTS -->
-## Acknowledgements
+## 参考项目
 
 * [DingDingAutoPlayCard](https://github.com/1414044032/DingDingAutoPlayCard)
 * [TopSup](https://github.com/Skyexu/TopSup)
@@ -67,7 +67,7 @@
 
 
 <!-- ABOUT THE PROJECT -->
-## About The Project
+## 项目介绍
 
 
     本项目仅用于交流学习，请勿用于自动打卡什么的  
@@ -77,6 +77,7 @@
 ### Built With
 
 * [Python](https://www.python.org/)
+* [pyinstaller](http://www.pyinstaller.org/)
 
 
 
@@ -120,6 +121,15 @@
     APP_ID = 
     API_KEY = 
     SECRET_KEY = 
+    ```
+    如果是使用虚拟机，需要设置高精度识别，不然识别出来的班次信息会有所不对，在以下代码修改：
+    ```bash
+    # 代码目录：common/ocr.py 
+    # line 302 可以自行选用 高精度识别还是普通识别
+    # 高精度识别 日免费调用 500 次 额度
+    response = client.basicAccurate(image_data)
+    # 普通识别 日免费调用 50000 次 额度
+    # response = client.basicGeneral(image_data)
     ```  
 
     3.2 邮箱SMTP设置
@@ -212,7 +222,7 @@ Distributed under the [BSD License](http://www.linfo.org/bsdlicense.html). See `
 <!-- CONTACT -->
 ## Contact
 
-不要联系我
+不要联系我，自己看代码吧……
 
 
 
