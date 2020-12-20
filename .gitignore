@@ -8,3 +8,4 @@ config/configure-dev.conf
 build/*
 dist/*
 *.spec
+screenshot.png

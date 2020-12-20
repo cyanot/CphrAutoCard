@@ -24,8 +24,8 @@ from log import mylogging
 
 # 读取配置文件
 CONFIG = configparser.ConfigParser()
-# config.read('./config/configure.conf', encoding='utf-8')
 CONFIG.read('./config/configure.conf', encoding='utf-8')
+# CONFIG.read('./config/configure-dev.conf', encoding='utf-8')
 
 # 全局变量
 # 每天班次list
@@ -215,7 +215,7 @@ def refresh_works():
             work_on = 0
 
         else:
-            work_off, work_on = get_work_type(times[0], times[1])
+            work_on, work_off = get_work_type(times[0], times[1])
 
         work = Work(
             name,
@@ -236,12 +236,28 @@ def refresh_works():
     return
 
 
+def print_works():
+    print(Fore.MAGENTA+"\n今日班次信息：\n")
+    if len(WORKS) < 1:
+        print(Fore.GREEN+"今天休息")
+    for work in WORKS:
+        print(Fore.BLUE+"name:%s" % work.name)
+        print(Fore.BLUE+"work_on_range:%s" % work.work_on_time_range)
+        print(Fore.BLUE+"work_off_range:%s" % work.work_off_time_range)
+        print("need_work_on:%d" % work.work_on)
+        print("need_work_off:%d" % work.work_off)
+        print(Fore.BLUE + "current_work_on:%d" % work.current_work_on)
+        print(Fore.BLUE + "current_work_off:%d" % work.current_work_off)
+        print('\n')
+
+
 def go_check():
     global WORKS
     if len(WORKS) < 1:
         return
     print(Fore.CYAN + time.strftime("%Y-%m-%d-%H:%M:%S", time.localtime())+"开始例行检查")
     random_sleep = random.randint(5, 20)
+    print_works()
     print(Fore.CYAN + "随机等待 %d s" % random_sleep)
     time.sleep(random_sleep)
     now = time.localtime(time.time())
