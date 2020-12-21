@@ -24,8 +24,8 @@ from log import mylogging
 
 # 读取配置文件
 CONFIG = configparser.ConfigParser()
-# CONFIG.read('./config/configure.conf', encoding='utf-8')
-CONFIG.read('./config/configure-dev.conf', encoding='utf-8')
+CONFIG.read('./config/configure.conf', encoding='utf-8')
+# CONFIG.read('./config/configure-dev.conf', encoding='utf-8')
 
 # 全局变量
 # 每天班次list
@@ -34,9 +34,9 @@ WORKS = []
 REST_REGION = CONFIG.get('work', 'rest_region')
 REST_TEXT = CONFIG.get('work', 'rest_text')
 
-REFRESH_RUNNING = 0
-CLEAR_RUNNING = 0
-CHECK_RUNNING = 0
+# REFRESH_RUNNING = 0
+# CLEAR_RUNNING = 0
+# CHECK_RUNNING = 0
 
 SCREEN_FILE = 'screenshot.png'
 
@@ -237,6 +237,19 @@ def refresh_works():
     return
 
 
+def go_check_work():
+    global WORKS
+    print(Fore.CYAN+"首次运行检查考勤信息")
+    for work in WORKS:
+        print("\n检查前信息\n")
+        print_object(work)
+        img = Image.open(SCREEN_FILE)
+        work.check_work(img, CONFIG)
+        print("\n检查后信息\n")
+        print_object(work)
+    print(Fore.GREEN+"检查考勤信息完成")
+
+
 def print_works():
     print(Fore.MAGENTA+"\n今日班次信息：\n")
     if len(WORKS) < 1:
@@ -390,7 +403,8 @@ if __name__ == '__main__':
 
     # 第一次运行先获取班次信息
     refresh_works()
-
+    # 首次运行要先检查是否已签到签退
+    go_check_work()
     # go_check()
 
     scheduler = BlockingScheduler()
