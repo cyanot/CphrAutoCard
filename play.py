@@ -24,8 +24,8 @@ from log import mylogging
 
 # 读取配置文件
 CONFIG = configparser.ConfigParser()
-CONFIG.read('./config/configure.conf', encoding='utf-8')
-# CONFIG.read('./config/configure-dev.conf', encoding='utf-8')
+# CONFIG.read('./config/configure.conf', encoding='utf-8')
+CONFIG.read('./config/configure-dev.conf', encoding='utf-8')
 
 # 全局变量
 # 每天班次list
@@ -213,6 +213,7 @@ def refresh_works():
             #
             work_off = 1
             work_on = 0
+            special = 1
 
         else:
             work_on, work_off = get_work_type(times[0], times[1])
@@ -285,7 +286,9 @@ def go_check():
                 now.tm_year, now.tm_mon, now.tm_mday,
                 now.tm_hour, now.tm_min, now.tm_sec
             )
-            send_email(SCREEN_FILE, title, CONFIG)
+            # 上班成功之后发邮件
+            if work.current_work_on == 1:
+                send_email(SCREEN_FILE, title, CONFIG)
             continue
         if work.need_work_off(now.tm_hour, now.tm_min):
             print(Fore.GREEN + "当前班次此时需要签退")
@@ -310,7 +313,9 @@ def go_check():
                 now.tm_year, now.tm_mon, now.tm_mday,
                 now.tm_hour, now.tm_min, now.tm_sec
             )
-            send_email(SCREEN_FILE, title, CONFIG)
+            # 检测下班成功之后发送邮件
+            if work.current_work_off == 1:
+                send_email(SCREEN_FILE, title, CONFIG)
             continue
     print(Fore.GREEN + "本次检查完成")
 
