@@ -36,5 +36,5 @@ def send_email(img_file_path, subject, config):
         server.quit()
         print(Fore.MAGENTA + "发送邮件成功")
     except smtplib.SMTPException as e:
-        print("error")
+        # print("error")
         print(e)

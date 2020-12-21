@@ -15,6 +15,7 @@ import re
 from common.work import Work
 from common.phone import Android
 from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.triggers.cron import CronTrigger
 
 #
 init(autoreset=True)
@@ -55,7 +56,7 @@ def get_work_off_range(off_time):
     :return:
     """
     times = list(map(int, re.split('[:：]', off_time)))
-    after = random.randint(0, 4)
+    after = random.randint(1, 4)
     # start_minutes = (times[1]+10)%60
     # start_hour = times[0] + int((times[1]+10)/60)
     return '%d:%d-%d:%d' % (
@@ -108,13 +109,12 @@ def is_today_rest():
 
 
 def refresh_works():
-    global REFRESH_RUNNING, WORKS
+    global WORKS
 
     print(Fore.CYAN + "开始刷新班次")
 
     if len(WORKS) > 1:
         print(Fore.RED + "班次已经获取，跳过..")
-        REFRESH_RUNNING = 0
         return
 
     try:
@@ -122,14 +122,12 @@ def refresh_works():
         android.screen_cap()
         android.close_cphr()
     except:
-        REFRESH_RUNNING = 0
         print(Fore.RED + "ADB 运行故障，跳过本次检测...")
         return
 
     if is_today_rest():
         print(Fore.MAGENTA + "今天休息")
         WORKS.clear()
-        REFRESH_RUNNING = 0
         return
 
     img = Image.open(SCREEN_FILE)
@@ -200,8 +198,6 @@ def refresh_works():
         # print(work.name)
         WORKS.append(work)
     print(Fore.MAGENTA + "获取到 %d 个班次信息" % len(WORKS))
-
-    REFRESH_RUNNING = 0
     return
 
 
@@ -224,12 +220,12 @@ def print_works():
         print(Fore.GREEN+"今天休息")
     for work in WORKS:
         print(Fore.BLUE+"name:%s" % work.name)
-        print(Fore.BLUE+"work_on_range:%s" % work.work_on_time_range)
-        print(Fore.BLUE+"work_off_range:%s" % work.work_off_time_range)
+        print(Fore.LIGHTGREEN_EX+"work_on_range:%s" % work.work_on_time_range)
+        print(Fore.LIGHTGREEN_EX+"work_off_range:%s" % work.work_off_time_range)
         print("need_work_on:%d" % work.work_on)
         print("need_work_off:%d" % work.work_off)
-        print(Fore.BLUE + "current_work_on:%d" % work.current_work_on)
-        print(Fore.BLUE + "current_work_off:%d" % work.current_work_off)
+        print(Fore.LIGHTCYAN_EX + "current_work_on:%d" % work.current_work_on)
+        print(Fore.LIGHTCYAN_EX + "current_work_off:%d" % work.current_work_off)
         print('\n')
 
 
@@ -237,16 +233,19 @@ def go_check():
     global WORKS
     if len(WORKS) < 1:
         return
-    print(Fore.CYAN + time.strftime("%Y-%m-%d-%H:%M:%S", time.localtime())+"开始例行检查")
-    random_sleep = random.randint(5, 20)
+    print(Fore.CYAN + "\n"+time.strftime("%Y-%m-%d-%H:%M:%S", time.localtime())+" 开始例行检查")
+    random_sleep = random.randint(5, 30)
     print_works()
-    print(Fore.CYAN + "随机等待 %d s" % random_sleep)
-    time.sleep(random_sleep)
+
     now = time.localtime(time.time())
     for work in WORKS:
         if work.need_work_on(now.tm_hour, now.tm_min):
             print(Fore.GREEN + "当前班次此时需要签到")
             print_object(work)
+
+            print(Fore.CYAN + "随机等待 %d s" % random_sleep)
+            time.sleep(random_sleep)
+
             x, y = work.get_region_center(work.work_on_region)
             # open app
             android.open_cphr()
@@ -274,6 +273,10 @@ def go_check():
         if work.need_work_off(now.tm_hour, now.tm_min):
             print(Fore.GREEN + "当前班次此时需要签退")
             print_object(work)
+
+            print(Fore.CYAN + "随机等待 %d s" % random_sleep)
+            time.sleep(random_sleep)
+
             x, y = work.get_region_center(work.work_off_region)
             # open app
             android.open_cphr()
@@ -298,7 +301,9 @@ def go_check():
             if work.current_work_off == 1:
                 send_email(SCREEN_FILE, title, CONFIG)
             continue
-    print(Fore.GREEN + "本次检查完成")
+
+        print(Fore.LIGHTCYAN_EX+"检查显示，当前时间不需要签到签退\n")
+    print(Fore.GREEN + time.strftime("%Y-%m-%d-%H:%M:%S", time.localtime())+" 本次检查完成\n")
 
 
 def clear_works():
@@ -380,8 +385,12 @@ if __name__ == '__main__':
     # scheduler.add_job(test, 'cron', day="*", hour="10-11", minute="*", second="*/2")
 
     # scheduler.add_job(test_app_open_close, 'cron', day="*", minute="*", second="*")
-    scheduler.add_job(refresh_works, 'cron', day="*", hour="5-7")
-    scheduler.add_job(clear_works, 'cron', day="*", hour="21-23")
-    scheduler.add_job(go_check, 'cron', day="*", minute="*", hour="8-20")
+    # pyinstaller 打包 需要这样设置
+    refresh_trigger = CronTrigger(day="*", hour="5-7")
+    scheduler.add_job(refresh_works, refresh_trigger)
+    clear_trigger = CronTrigger(day="*", hour="21-23")
+    scheduler.add_job(clear_works, clear_trigger)
+    go_trigger = CronTrigger(day="*", minute="*", hour="8-20")
+    scheduler.add_job(go_check, go_trigger)
     print(Fore.GREEN + "调度器开始运行..")
     scheduler.start()
