@@ -36,6 +36,7 @@ WORKS = []
 REST_REGION = CONFIG.get('work', 'rest_region')
 REST_TEXT = CONFIG.get('work', 'rest_text')
 
+TODAY_REST = 0
 # REFRESH_RUNNING = 0
 # CLEAR_RUNNING = 0
 # CHECK_RUNNING = 0
@@ -116,7 +117,10 @@ def refresh_works():
     if len(WORKS) > 1:
         print(Fore.RED + "班次已经获取，跳过..")
         return
-
+    global TODAY_REST
+    if TODAY_REST == 1:
+        print(Fore.MAGENTA + "今天休息，跳过..")
+        return
     try:
         android.open_cphr()
         android.screen_cap()
@@ -126,8 +130,9 @@ def refresh_works():
         return
 
     if is_today_rest():
-        print(Fore.MAGENTA + "今天休息")
+        print(Fore.MAGENTA + "OCR识别出今天休息")
         WORKS.clear()
+        TODAY_REST = 1
         return
 
     img = Image.open(SCREEN_FILE)
@@ -193,7 +198,7 @@ def refresh_works():
             work_on_end, work_off_end,
             special, special_text
         )
-        print(Fore.MAGENTA +"第 %d 个班次信息：" % (i + 1))
+        print(Fore.MAGENTA + "第 %d 个班次信息：" % (i + 1))
         print_object(work)
         # print(work.name)
         WORKS.append(work)
@@ -203,7 +208,7 @@ def refresh_works():
 
 def go_check_work():
     global WORKS
-    print(Fore.CYAN+"首次运行检查考勤信息")
+    print(Fore.CYAN + "首次运行检查考勤信息")
     for work in WORKS:
         print("\n检查前信息\n")
         print_object(work)
@@ -211,17 +216,17 @@ def go_check_work():
         work.check_work(img, CONFIG)
         print("\n检查后信息\n")
         print_object(work)
-    print(Fore.GREEN+"检查考勤信息完成")
+    print(Fore.GREEN + "检查考勤信息完成")
 
 
 def print_works():
-    print(Fore.MAGENTA+"\n今日班次信息：\n")
+    print(Fore.MAGENTA + "\n今日班次信息：\n")
     if len(WORKS) < 1:
-        print(Fore.GREEN+"今天休息")
+        print(Fore.GREEN + "今天休息")
     for work in WORKS:
-        print(Fore.BLUE+"name:%s" % work.name)
-        print(Fore.LIGHTGREEN_EX+"work_on_range:%s" % work.work_on_time_range)
-        print(Fore.LIGHTGREEN_EX+"work_off_range:%s" % work.work_off_time_range)
+        print(Fore.BLUE + "name:%s" % work.name)
+        print(Fore.LIGHTGREEN_EX + "work_on_range:%s" % work.work_on_time_range)
+        print(Fore.LIGHTGREEN_EX + "work_off_range:%s" % work.work_off_time_range)
         print("need_work_on:%d" % work.work_on)
         print("need_work_off:%d" % work.work_off)
         print(Fore.LIGHTCYAN_EX + "current_work_on:%d" % work.current_work_on)
@@ -233,7 +238,7 @@ def go_check():
     global WORKS
     if len(WORKS) < 1:
         return
-    print(Fore.CYAN + "\n"+time.strftime("%Y-%m-%d-%H:%M:%S", time.localtime())+" 开始例行检查")
+    print(Fore.CYAN + "\n" + time.strftime("%Y-%m-%d-%H:%M:%S", time.localtime()) + " 开始例行检查")
     random_sleep = random.randint(5, 30)
     print_works()
 
@@ -302,8 +307,8 @@ def go_check():
                 send_email(SCREEN_FILE, title, CONFIG)
             continue
 
-        print(Fore.LIGHTCYAN_EX+"检查显示，当前时间不需要签到签退\n")
-    print(Fore.GREEN + time.strftime("%Y-%m-%d-%H:%M:%S", time.localtime())+" 本次检查完成\n")
+        print(Fore.LIGHTCYAN_EX + "检查显示，当前时间 班次[%s] 不需要签到签退\n" % work.name)
+    print(Fore.GREEN + time.strftime("%Y-%m-%d-%H:%M:%S", time.localtime()) + " 本次检查完成\n")
 
 
 def clear_works():
@@ -311,12 +316,15 @@ def clear_works():
     day end
     :return:
     """
-    global WORKS
+    global WORKS, TODAY_REST
     if len(WORKS) > 0:
         print(Fore.CYAN + "开始清空当日班次..")
         WORKS.clear()
     else:
         print(Fore.RED + "当日班次已清空，跳过..")
+
+    if TODAY_REST == 1:
+        TODAY_REST = 0
 
 
 def test():
@@ -343,12 +351,28 @@ def is_mail_config_passed():
 
     username = config.get('mail', 'username')
     password = config.get('mail', 'password')
-    if host is None \
-            or port is None \
-            or receiver is None \
-            or sender is None \
-            or username is None \
-            or password is None:
+    # print(len(host))
+    # print(len(port))
+    if len(host) == 0 \
+            or len(port) == 0 \
+            or len(receiver) == 0 \
+            or len(sender) == 0 \
+            or len(username) == 0 \
+            or len(password) == 0:
+        return False
+    return True
+
+
+def is_ocr_config_passed():
+    config = CONFIG
+    APP_ID = config.get('baidu_api', 'APP_ID').replace(' ', '').strip()
+    API_KEY = config.get('baidu_api', 'API_KEY').replace(' ', '').strip()
+    SECRET_KEY = config.get('baidu_api', 'SECRET_KEY').replace(' ', '').strip()
+    # print(APP_ID)
+    # print(len(APP_ID))
+    if len(APP_ID) == 0 \
+            or len(API_KEY) == 0 \
+            or len(SECRET_KEY) == 0:
         return False
     return True
 
@@ -364,15 +388,24 @@ if __name__ == '__main__':
 
     if not android.check_devices():
         print(Fore.RED + "adb 未检测到 设备，无法继续运行")
+        input("\n输入任意键退出...\n")
         exit(1)
     else:
         print(Fore.GREEN + "设备检查通过")
 
     if not is_mail_config_passed():
-        print(Fore.RED+"邮箱配置检查失败，无法继续运行")
+        print(Fore.RED + "邮箱配置检查失败，无法继续运行")
+        input("\n输入任意键退出...\n")
         exit(1)
     else:
-        print(Fore.GREEN+"邮箱配置检查通过")
+        print(Fore.GREEN + "邮箱配置检查通过")
+
+    if not is_ocr_config_passed():
+        print(Fore.RED + "百度OCR配置检查失败，无法继续运行")
+        input("\n输入任意键退出...\n")
+        exit(1)
+    else:
+        print(Fore.GREEN + "百度OCR配置检查通过")
 
     # 第一次运行先获取班次信息
     refresh_works()
@@ -386,7 +419,8 @@ if __name__ == '__main__':
 
     # scheduler.add_job(test_app_open_close, 'cron', day="*", minute="*", second="*")
     # pyinstaller 打包 需要这样设置
-    refresh_trigger = CronTrigger(day="*", hour="5-7")
+    # app会出现获取不到考勤班次情况，多去获取几次
+    refresh_trigger = CronTrigger(day="*", hour="5-7", minute="*/5")
     scheduler.add_job(refresh_works, refresh_trigger)
     clear_trigger = CronTrigger(day="*", hour="21-23")
     scheduler.add_job(clear_works, clear_trigger)
