@@ -1,8 +1,11 @@
 import os
 import subprocess
 import time
+import psutil
 # from colorama import init, Fore
 # init(autoreset=True)
+EMU_PROCESS_NAME = "MEmu.exe"
+EMU_PATH = "D:\Program Files\Microvirt\MEmu\MEmu.exe"
 
 
 class Android:
@@ -30,6 +33,12 @@ class Android:
         self.cmd_check_devices = 'adb devices'
         # tap position
         self.cmd_tap_position = 'adb shell input tap '
+
+    def connect(self, name):
+        cmd = 'adb connect %s ' % name
+        process = subprocess.Popen(cmd)
+        process.wait()
+        print('cmd connect %s success' % name)
 
     def check_devices(self):
         find_str = 'device'
@@ -81,7 +90,8 @@ class Android:
             process = subprocess.Popen(operation, shell=False, stdout=subprocess.PIPE)
             process.wait()
             # 确保完全启动，并且加载上相应按键
-        time.sleep(5)
+        # print('sleep 35 s to wait app')
+        time.sleep(15)
         print("open cphr success")
 
     def close_cphr(self):
@@ -105,3 +115,44 @@ class Android:
             process = subprocess.Popen(operation, shell=False, stdout=subprocess.PIPE)
             process.wait()
         print("tap position %d %d success" % (int(x), int(y)))
+
+
+class Simulator:
+    def __init__(self, name, path):
+        if len(name) < 1:
+            self.name = EMU_PROCESS_NAME
+        else:
+            self.name = name
+
+        if len(path) < 1 or path is None:
+            self.path = EMU_PATH
+        else:
+            self.path = path
+
+    def open(self):
+        process = subprocess.Popen(self.path)
+        # process.wait()
+        print('open emu success')
+
+    def close(self):
+        cmd = 'taskkill /IM %s /F' % self.name
+        os.system(cmd)
+
+    def process_exist(self):
+        for pid in psutil.pids():
+            process = psutil.Process(pid)
+            # print(process.name())
+            # print(process)
+            if process.name() == self.name:
+                if process.status() == 'running':
+                    return True
+        return False
+
+    def reopen(self):
+        if self.process_exist():
+            print('simulator exists, close it..')
+            self.close()
+            time.sleep(2)
+        self.open()
+        print("sleep 100 s ")
+        time.sleep(100)

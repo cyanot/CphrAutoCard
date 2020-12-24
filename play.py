@@ -14,6 +14,7 @@ from colorama import init, Fore
 import re
 from common.work import Work
 from common.phone import Android
+from common.phone import Simulator
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
 
@@ -26,8 +27,8 @@ from log import mylogging
 
 # 读取配置文件
 CONFIG = configparser.ConfigParser()
-CONFIG.read('./config/configure.conf', encoding='utf-8')
-# CONFIG.read('./config/configure-dev.conf', encoding='utf-8')
+# CONFIG.read('./config/configure.conf', encoding='utf-8')
+CONFIG.read('./config/configure-dev.conf', encoding='utf-8')
 
 # 全局变量
 # 每天班次list
@@ -35,6 +36,7 @@ WORKS = []
 #
 REST_REGION = CONFIG.get('work', 'rest_region')
 REST_TEXT = CONFIG.get('work', 'rest_text')
+USE_SIMULATOR = int(CONFIG.get('simulator', 'use'))
 
 TODAY_REST = 0
 # REFRESH_RUNNING = 0
@@ -44,6 +46,7 @@ TODAY_REST = 0
 SCREEN_FILE = 'screenshot.png'
 
 android = Android(SCREEN_FILE)
+simulator = Simulator(CONFIG.get('simulator', 'name'), CONFIG.get('simulator', 'path'))
 
 
 def print_object(obj):
@@ -121,6 +124,13 @@ def refresh_works():
     if TODAY_REST == 1:
         print(Fore.MAGENTA + "今天休息，跳过..")
         return
+
+    # 网络判断 网络故障app无法进入
+    if not send_http_packet('www.baidu.com'):
+        print(Fore.RED+"网络错误")
+        logger.error("网络故障")
+        return
+
     try:
         android.open_cphr()
         android.screen_cap()
@@ -242,6 +252,12 @@ def go_check():
     random_sleep = random.randint(5, 30)
     print_works()
 
+    # 网络故障
+    if not send_http_packet('www.baidu.com'):
+        print(Fore.RED+"网络故障，跳过本次检查")
+        logger.error("网络故障，跳过本次检查")
+        return
+
     now = time.localtime(time.time())
     for work in WORKS:
         if work.need_work_on(now.tm_hour, now.tm_min):
@@ -274,6 +290,8 @@ def go_check():
             # 上班成功之后发邮件
             if work.current_work_on == 1:
                 send_email(SCREEN_FILE, title, CONFIG)
+            else:
+                logger.error("%s 上班打卡失败" % work.name)
             continue
         if work.need_work_off(now.tm_hour, now.tm_min):
             print(Fore.GREEN + "当前班次此时需要签退")
@@ -305,6 +323,8 @@ def go_check():
             # 检测下班成功之后发送邮件
             if work.current_work_off == 1:
                 send_email(SCREEN_FILE, title, CONFIG)
+            else:
+                logger.error("%s 下班打卡失败" % work.name)
             continue
 
         print(Fore.LIGHTCYAN_EX + "检查显示，当前时间 班次[%s] 不需要签到签退\n" % work.name)
@@ -377,6 +397,17 @@ def is_ocr_config_passed():
     return True
 
 
+def init_simulator():
+    if USE_SIMULATOR != 1:
+        android.connect('127.0.0.1:21503')
+        return
+    print(Fore.MAGENTA+"初始化模拟器")
+    simulator.reopen()
+    print(Fore.MAGENTA+"连接模拟器")
+    android.connect('127.0.0.1:21503')
+    print(Fore.GREEN+"初始化模拟器完成\n")
+
+
 if __name__ == '__main__':
     # send_mail_test()
     # now = time.localtime(time.time())
@@ -385,6 +416,9 @@ if __name__ == '__main__':
     # print(now.tm_min)
     # check environment
     print(Fore.CYAN + "开始检查运行环境")
+
+    init_simulator()
+    # android.connect('127.0.0.1:21503')
 
     if not android.check_devices():
         print(Fore.RED + "adb 未检测到 设备，无法继续运行")

@@ -1,3 +1,4 @@
+psutil
 requests==2.14.2
 matplotlib==2.0.2
 Pillow==4.1.1
