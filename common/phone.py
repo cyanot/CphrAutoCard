@@ -90,8 +90,8 @@ class Android:
             process = subprocess.Popen(operation, shell=False, stdout=subprocess.PIPE)
             process.wait()
             # 确保完全启动，并且加载上相应按键
-        # print('sleep 35 s to wait app')
-        time.sleep(15)
+        print('sleep 35 s to wait app')
+        time.sleep(35)
         print("open cphr success")
 
     def close_cphr(self):

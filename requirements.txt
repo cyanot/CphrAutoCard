@@ -1,3 +1,4 @@
+apscheduler
 psutil
 requests==2.14.2
 matplotlib==2.0.2

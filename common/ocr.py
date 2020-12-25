@@ -4,13 +4,12 @@
 # @Time    : 2018/1/9 19:34
 # @desc    :
 
-from PIL import Image
-import pytesseract
-from PIL import ImageFilter
-from aip import AipOcr
 import io
-import base64
-from colorama import init,Fore
+
+import pytesseract
+from PIL import Image
+from aip import AipOcr
+from colorama import Fore
 
 
 # 二值化算法

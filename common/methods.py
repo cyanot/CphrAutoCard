@@ -4,7 +4,6 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 import requests
-import time
 from colorama import init, Fore
 from requests.exceptions import ReadTimeout, ConnectTimeout, HTTPError, ConnectionError
 
