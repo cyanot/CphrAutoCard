@@ -27,8 +27,8 @@ from log import mylogging
 
 # 读取配置文件
 CONFIG = configparser.ConfigParser()
-# CONFIG.read('./config/configure.conf', encoding='utf-8')
-CONFIG.read('./config/configure-dev.conf', encoding='utf-8')
+CONFIG.read('./config/configure.conf', encoding='utf-8')
+# CONFIG.read('./config/configure-dev.conf', encoding='utf-8')
 
 # 全局变量
 # 每天班次list
