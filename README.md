@@ -150,6 +150,14 @@
     ```  
       
     3.3  截图坐标配置
+    先打开app，使用以下adb命令进行截图
+    ```bash
+    # 截图保存到 sdcard
+    adb shell screencap -p sdcard/screenshot.png
+    # 通过adb拷贝截图图片到电脑 . 是当前命令行运行目录
+    adb pull sdcard/screenshot.png .
+   ```
+    然后根据以下配置文件说明进行配置
     ```sh
     [work]
     count = 2
