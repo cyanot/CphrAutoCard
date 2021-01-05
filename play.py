@@ -53,7 +53,7 @@ def print_object(obj):
     print('\n'.join(['%s:%s' % item for item in obj.__dict__.items()]))
 
 
-def get_work_off_range(off_time):
+def get_work_off_range(off_time, special = 0):
     """
     下班打卡时间范围生成
     :param off_time:
@@ -61,6 +61,8 @@ def get_work_off_range(off_time):
     """
     times = list(map(int, re.split('[:：]', off_time)))
     after = random.randint(1, 4)
+    if special == 1:
+        after = random.randint(0, 1)
     # start_minutes = (times[1]+10)%60
     # start_hour = times[0] + int((times[1]+10)/60)
     return '%d:%d-%d:%d' % (
@@ -73,7 +75,8 @@ def get_work_off_range(off_time):
 
 def get_work_on_range(on_time):
     times = list(map(int, re.split('[:：]', on_time)))
-    before = random.randint(6, 30)
+    # 上班改早点，避开高峰期
+    before = random.randint(15, 35)
     # start_minutes = (times[1]+10)%60
     # start_hour = times[0] + int((times[1]+10)/60)
     return '%d:%d-%d:%d' % (
@@ -119,6 +122,7 @@ def refresh_works():
 
     if len(WORKS) > 1:
         print(Fore.RED + "班次已经获取，跳过..")
+        print_works()
         return
     global TODAY_REST
     if TODAY_REST == 1:
@@ -180,6 +184,16 @@ def refresh_works():
             continue
         name = text[0]
 
+        #
+        # times = re.split('[-()]', text[0])
+        # print(times)
+        # work_on_range = get_work_on_range(times[1])
+        # print(work_on_range)
+        # work_off_range = get_work_off_range(times[2])
+        # print(work_off_range)
+        #
+        # 在此处更改班次识别格式 此处对应 上班时间-下班时间(信息-信息)
+        #
         times = re.split('[-(]', text[0])
         print(times)
         work_on_range = get_work_on_range(times[0])
@@ -195,7 +209,7 @@ def refresh_works():
             work_off = 1
             work_on = 0
             special = 1
-
+            work_off_range = get_work_off_range(times[1], special)
         else:
             work_on, work_off = get_work_type(times[0], times[1])
 
@@ -417,8 +431,8 @@ if __name__ == '__main__':
     # check environment
     print(Fore.CYAN + "开始检查运行环境")
 
-    init_simulator()
-    # android.connect('127.0.0.1:21503')
+    # init_simulator()
+    android.connect('127.0.0.1:21503')
 
     if not android.check_devices():
         print(Fore.RED + "adb 未检测到 设备，无法继续运行")
@@ -454,11 +468,18 @@ if __name__ == '__main__':
     # scheduler.add_job(test_app_open_close, 'cron', day="*", minute="*", second="*")
     # pyinstaller 打包 需要这样设置
     # app会出现获取不到考勤班次情况，多去获取几次
-    refresh_trigger = CronTrigger(day="*", hour="5-7", minute="*/5")
-    scheduler.add_job(refresh_works, refresh_trigger)
-    clear_trigger = CronTrigger(day="*", hour="21-23")
-    scheduler.add_job(clear_works, clear_trigger)
-    go_trigger = CronTrigger(day="*", minute="*", hour="8-20")
-    scheduler.add_job(go_check, go_trigger)
+    # refresh_trigger = CronTrigger(day="*", hour="5-7", minute="*/5")
+    scheduler.add_job(refresh_works, CronTrigger(
+        day="*", hour="5-6", minute="*/5"
+    ))
+    # clear_trigger = CronTrigger(day="*", hour="21-23")
+    scheduler.add_job(clear_works, CronTrigger(
+        day="*", hour="21-23"
+    ))
+    # go_trigger = CronTrigger(day="*", minute="*", hour="8-20")
+    scheduler.add_job(go_check, CronTrigger(
+        day="*", minute="*", hour="7-20"
+    ))
+
     print(Fore.GREEN + "调度器开始运行..")
     scheduler.start()

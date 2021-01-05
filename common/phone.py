@@ -111,9 +111,12 @@ class Android:
     def tap_postion(self, x, y):
         cmd = self.cmd_tap_position + ' %d %d ' % (x, y)
         operations = [cmd]
-        for operation in operations:
-            process = subprocess.Popen(operation, shell=False, stdout=subprocess.PIPE)
-            process.wait()
+        for i in range(1,4):
+            for operation in operations:
+                process = subprocess.Popen(operation, shell=False, stdout=subprocess.PIPE)
+                process.wait()
+            print('tap %d' % i)
+            time.sleep(.1)
         print("tap position %d %d success" % (int(x), int(y)))
 
 
